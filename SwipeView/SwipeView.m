@@ -861,7 +861,15 @@
     CGFloat width = _vertical? self.bounds.size.height: self.bounds.size.width;
     CGFloat x = _vertical? _scrollView.frame.origin.y: _scrollView.frame.origin.x;
     CGFloat itemWidth = _vertical? _itemSize.height: _itemSize.width;
-    NSInteger numberOfVisibleItems = itemWidth ? (ceilf(width / itemWidth) + 2): 0;
+    
+    NSInteger extraItemToLoad = 2;
+    // When the currentItemIndex is 0 or the last index, there is no need to load extra views except from those who are actually visible.
+    if (self.currentItemIndex == 0 || (self.currentItemIndex == self.numberOfItems - 1))
+    {
+        extraItemToLoad = 0;
+    }
+    NSInteger numberOfVisibleItems = itemWidth ? (ceilf(width / itemWidth) + extraItemToLoad): 0;
+    
     NSMutableSet *visibleIndices = [NSMutableSet setWithCapacity:numberOfVisibleItems];
     NSInteger offset = self.currentItemIndex - ceilf(x / itemWidth) - 1;
     if (!_wrapEnabled)
@@ -919,10 +927,12 @@
     _itemSize = CGSizeZero;
     _scrolling = NO;
     
-    //remove old views
+    //remove old views, And put them in the pool
+    self.itemViewPool = [NSMutableSet set];
     for (UIView *view in self.visibleItemViews)
     {
         [view removeFromSuperview];
+        [self.itemViewPool addObject:view];
     }
     
     //get number of items
@@ -930,7 +940,6 @@
     
     //reset view pools
     self.itemViews = [NSMutableDictionary dictionary];
-    self.itemViewPool = [NSMutableSet set];
     
     //layout views
     [self setNeedsLayout];
